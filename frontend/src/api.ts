@@ -153,6 +153,7 @@ export const api = {
 
   // ---------- 账本 ----------
   getLedger: (params?: Record<string, unknown>) => request<LedgerPage>(`/ledger${qs(params)}`),
+  locateLedgerInvoice: (id: string, pageSize: number) => request<{invoice_id: string; page: number}>(`/ledger/locate/${encodeURIComponent(id)}${qs({page_size: pageSize})}`),
   categories: () => request<{ categories: string[]; map: Record<string, string> }>('/ledger/categories'),
 
   // ---------- 导出 ----------

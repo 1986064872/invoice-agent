@@ -239,7 +239,7 @@ export default function SettingsPage() {
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="当前企业名称" hint="公司全称，例如：南京轩海贸易有限公司">
+            <Field label="当前企业名称" hint="公司全称，例如：示例贸易有限公司">
               <TextInput
                 value={companyName}
                 placeholder="请填写公司全称"
@@ -263,7 +263,7 @@ export default function SettingsPage() {
             <TextArea
               rows={4}
               value={companyAliases}
-              placeholder="例如：轩海贸易"
+              placeholder="例如：示例贸易"
               onChange={(e) => setCompanyAliases(e.target.value)}
             />
           </Field>

@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "企业智能票据记账助手"
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-flash"
+    deepseek_timeout_seconds: float = 120.0
     api_prefix: str = "/api/v1"
 
     # ---------------- OCR ----------------

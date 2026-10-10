@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -12,6 +12,15 @@ from ..services.direction import DIRECTION_ORDER, classify_direction
 from ..services.ledger import build_query, ledger_row, summarise
 
 router = APIRouter(tags=["账本"])
+
+
+@router.get('/ledger/locate/{invoice_id}', summary='定位票据在全部账本中的页码')
+def locate_invoice(invoice_id: str, page_size: int = Query(default=20, ge=1, le=500), db: Session = Depends(get_db)):
+    ids = build_query(db).with_entities(Invoice.id).all()
+    index = next((i for i, row in enumerate(ids) if row[0] == invoice_id), None)
+    if index is None:
+        raise HTTPException(404, '该发票已被删除或不在账本中')
+    return {'invoice_id': invoice_id, 'page': index // page_size + 1}
 
 
 @router.get("/ledger", response_model=LedgerPage, summary="读取账本")

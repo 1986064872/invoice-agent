@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ChevronRight,
@@ -170,6 +170,9 @@ export default function Ledger() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const toast = useToast()
+  const focusId = params.get('focus')
+  const focusRow = useRef<HTMLTableRowElement | null>(null)
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null)
 
   const [status, setStatus] = useState(params.get('status') ?? 'all')
   const [direction, setDirection] = useState(params.get('direction') ?? '')
@@ -369,6 +372,31 @@ export default function Ledger() {
   // 放在后面会踩「变量在初始化前被访问」。
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmBatch, setConfirmBatch] = useState(false)
+
+  useEffect(() => {
+    if (!focusId) return
+    let active = true
+    setStatus('all'); setDirection(''); setScope('all'); setDateFrom(''); setDateTo('')
+    setCategory(''); setQ(''); setSearchInput(''); setAbnormalOnly(false)
+    setSelected(new Set()); setExpandedId(null); setScrollTarget(null)
+    api.locateLedgerInvoice(focusId, PAGE_SIZE).then(location => {
+      if (!active) return
+      setPage(location.page)
+      setSelected(new Set([focusId]))
+      setExpandedId(focusId)
+      setScrollTarget(focusId)
+    }).catch(err => { if (active) toast('error', err instanceof Error ? err.message : '定位发票失败') })
+    return () => { active = false }
+  }, [focusId, toast])
+
+  useEffect(() => {
+    if (!scrollTarget || loading || detailLoading || detail?.id !== scrollTarget || !visibleRows.some(row => row.invoice_id === scrollTarget)) return
+    const frame = requestAnimationFrame(() => {
+      focusRow.current?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+      setScrollTarget(null)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [scrollTarget, loading, detailLoading, detail, visibleRows])
 
   const toggleSelect = useCallback((invoiceId: string) => {
     setSelected((prev) => {
@@ -606,7 +634,7 @@ export default function Ledger() {
               }}
             >
               <TextInput
-                placeholder="发票号码 / 销售方 / 购买方 / 文件名 / 分类"
+                placeholder="票号 / 购销方 / 分类 / 会计科目 / 项目 / 备注 / 文件名"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
@@ -756,6 +784,8 @@ export default function Ledger() {
                   {visibleRows.map((row) => (
                     <Fragment key={row.id}>
                       <tr
+                        ref={row.invoice_id === focusId ? focusRow : undefined}
+                        data-invoice-id={row.invoice_id}
                         onClick={() => toggleDetail(row)}
                         title="点一下看这张票的明细"
                         className={`cursor-pointer border-b border-slate-100 transition last:border-0 ${
@@ -992,7 +1022,7 @@ export default function Ledger() {
         ) : null}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Field label="当前企业名称" hint="例如：南京轩海贸易有限公司">
+          <Field label="当前企业名称" hint="例如：示例贸易有限公司">
             <TextInput
               value={companyName}
               placeholder="请填写公司全称"
@@ -1015,7 +1045,7 @@ export default function Ledger() {
           <TextArea
             rows={3}
             value={companyAliases}
-            placeholder="例如：轩海贸易"
+            placeholder="例如：示例贸易"
             onChange={(e) => setCompanyAliases(e.target.value)}
           />
         </Field>

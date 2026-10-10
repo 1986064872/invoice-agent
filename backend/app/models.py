@@ -36,6 +36,32 @@ def new_id() -> str:
     return str(uuid.uuid4())
 
 
+class AgentTask(Base):
+    __tablename__ = "agent_task"
+    id = Column(String(36), primary_key=True, default=new_id)
+    status = Column(String(24), default="queued", nullable=False)
+    payload = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+
+
+class AgentConversation(Base):
+    __tablename__ = "agent_conversation"
+    id = Column(String(36), primary_key=True, default=new_id)
+    messages = Column(JSON, default=list, nullable=False)
+    draft = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+
+
+class AgentArtifact(Base):
+    __tablename__ = "agent_artifact"
+    id = Column(String(36), primary_key=True, default=new_id)
+    conversation_id = Column(String(36), nullable=False, index=True)
+    kind = Column(String(24), nullable=False)
+    payload = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+
+
+
 # --------------------------------------------------------------------------
 # 状态常量（前端要和这些字符串对齐）
 # --------------------------------------------------------------------------

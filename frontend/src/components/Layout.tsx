@@ -5,6 +5,7 @@ import { useAsync } from '../lib/hooks'
 import { useDataVersion } from '../lib/refresh'
 
 const NAV = [
+  { to: '/agent', label: 'Agent 工作台', icon: Receipt, desc: '任务与异常待办' },
   { to: '/', label: '首页', icon: LayoutDashboard, end: true, desc: '本月概览' },
   { to: '/tickets', label: '票据中心', icon: Upload, desc: '上传与批次' },
   { to: '/review', label: '复核工作台', icon: FileText, desc: '逐张确认' },

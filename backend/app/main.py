@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from .config import PROJECT_DIR, settings
 from .database import SessionLocal, init_db
 from .ocr import OCRProviderError, shutdown_paddle_workers
-from .routers import dashboard, exports, files, invoices, ledger, rules
+from .routers import agent, agent_chat, dashboard, exports, files, invoices, ledger, rules
 from .seed import seed_system_rules
 from .services.storage import UploadRejected
 
@@ -27,8 +27,14 @@ from .services.storage import UploadRejected
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
+    # 后台任务不跨进程恢复；重启后明确标记中断，保留已整理的记录。
+    from .models import AgentTask
     db = SessionLocal()
     try:
+        for task in db.query(AgentTask).filter(AgentTask.status.in_(['queued', 'processing'])).all():
+            task.status = 'failed'
+            task.payload = {**task.payload, 'log': [*task.payload.get('log', []), '服务重启，任务已中断。可重新发起整理，相同文件会复用已有记录。']}
+        db.commit()
         created = seed_system_rules(db)
         if created:
             print(f"[init] 已写入 {created} 条系统分类规则")
@@ -77,7 +83,7 @@ async def ocr_error_handler(_request: Request, exc: OCRProviderError):
 # --------------------------------------------------------------------------
 # 业务路由
 # --------------------------------------------------------------------------
-for module in (invoices, files, ledger, exports, rules, dashboard):
+for module in (invoices, files, ledger, exports, rules, dashboard, agent, agent_chat):
     app.include_router(module.router, prefix=settings.api_prefix)
 
 

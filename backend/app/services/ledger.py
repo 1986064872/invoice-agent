@@ -12,7 +12,7 @@ from datetime import date, datetime
 from sqlalchemy import or_
 from sqlalchemy.orm import Query, Session, joinedload
 
-from ..models import Invoice, InvoiceFile, InvoiceStatus, LedgerEntry
+from ..models import Invoice, InvoiceFile, InvoiceItem, InvoiceStatus, LedgerEntry
 from .direction import DirectionResult, classify_direction
 
 STATUS_ALL = "all"
@@ -79,12 +79,16 @@ def build_query(
                 Invoice.buyer_name.like(like),
                 InvoiceFile.original_name.like(like),
                 Invoice.expense_category.like(like),
+                Invoice.account_subject.like(like),
+                Invoice.invoice_remark.like(like),
+                Invoice.items.any(InvoiceItem.item_name.like(like)),
             )
         )
 
     return query.order_by(
         Invoice.invoice_date.desc().nullslast(),
         Invoice.created_at.desc(),
+        Invoice.id.desc(),
     )
 
 
